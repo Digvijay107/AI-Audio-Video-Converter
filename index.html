@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio/Video to Text Converter</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7fa;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: #ffffff;
+            padding: 30px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #4a90e2;
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        input[type="file"] {
+            display: block;
+            margin: 20px auto;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background-color: #f9f9f9;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        button {
+            padding: 12px;
+            background-color: #4a90e2;
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #357ABD;
+        }
+
+        .response-box {
+            width: 100%;
+            height: 100px;
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            font-size: 14px;
+            color: #444;
+        }
+
+        .progress {
+            width: 100%;
+            height: 20px;
+            margin-top: 10px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0;
+            background-color: #4a90e2;
+            transition: width 0.4s;
+        }
+
+        .progress-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            top: 0;
+            color: #fff;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Audio/Video to Text Converter</h2>
+    <form id="audioForm" enctype="multipart/form-data">
+        <input type="file" id="audioFile" name="audioFile" accept=".mp3,.mp4,.avi,.mov" required>
+        <button type="submit">Convert to Text</button>
+    </form>
+
+    <h3>Transcribed Text:</h3>
+    <div class="response-box" id="responseBox"></div>
+
+    <div class="progress">
+        <div class="progress-bar" id="progressBar"></div>
+        <div class="progress-text" id="progressText">0%</div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('audioForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        document.getElementById('responseBox').textContent = '';
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        progressBar.style.width = '0%';
+        progressText.textContent = '0%';
+
+        const formData = new FormData();
+        const audioFile = document.getElementById('audioFile').files[0];
+        formData.append('audioFile', audioFile);
+
+        const updateProgress = () => {
+            fetch('http://127.0.0.1:5000/progress')
+                .then(response => response.json())
+                .then(data => {
+                    progressBar.style.width = data.progress + '%';
+                    progressText.textContent = data.progress + '%';
+
+                    if (data.progress < 100) {
+                        setTimeout(updateProgress, 5000);
+                    } else {
+                        document.getElementById('responseBox').textContent += ' Processing completed successfully!';
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        };
+
+        updateProgress();
+
+        fetch('http://127.0.0.1:5000/upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('responseBox').textContent = data.transcribedText;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('responseBox').textContent = 'Error processing audio/video file.';
+        });
+    });
+</script>
+
+</body>
+</html>
